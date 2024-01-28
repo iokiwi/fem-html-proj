@@ -1,0 +1,74 @@
+{{ block "index" . }}
+
+<html>
+    <head>
+        <title>Our First HTML Site!</title>
+        <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+    </head>
+    <body>
+        {{ template "form" .Form }}
+        <hr>
+        {{ template "display" .Data }}
+        <script>
+            document.addEventListener("DOMContentLoaded", (event) => {
+                document.body.addEventListener('htmx:beforeSwap', function(evt) {
+                    if (evt.detail.xhr.status === 422) {
+                        // allow 422 responses to swap as we are using this as a signal that
+                        // a form was submitted with bad data and want to rerender with the
+                        // errors
+                        //
+                        // set isError to false to avoid error logging in console
+                        evt.detail.shouldSwap = true;
+                        evt.detail.isError = false;
+                    }
+                });
+            })
+        </script>
+    </body>
+
+</html>
+{{ end }}
+
+{{ block "form" . }}
+<form hx-swap="outerHTML" hx-post="/contacts">
+    <p>name: <input 
+        {{ if .Values.name }} value="{{ .Values.name}}" {{ end }}
+        type="text" name="name"></p>
+    <p>email: <input 
+        {{ if .Values.email }} value="{{ .Values.email }}" {{ end }}
+        type="text" name="email"></p>
+    <div style="color: red">{{ if .Errors.email }} {{ .Errors.email }} {{ end }}</div>
+    <button type="submit">Add contact</button>
+</form>
+{{ end }}
+
+{{ block "display" . }}
+    <div id="contacts" style="display: 'flex'; flex-direction: 'column'">
+    {{ range .Contacts }}
+        {{ template "contact" . }}
+    {{ end }}
+    </div>
+{{ end }}
+
+
+{{ block "contact" . }}
+    <div id="contact-{{ .Id }}" style="display: flex; padding: 5px">
+        <div style="cursor: pointer; padding-right: 5px" hx-delete="/contacts/{{ .Id }}" hx-swap="outerHTML" hx-target="#contact-{{ .Id }}">🗑️</div>
+        <div style="padding-right: 5px; min-width: 100px;">
+            Id: <span>{{ .Id }}</span>
+        </div>
+        <div style="padding-right: 5px; min-width: 100px;">
+            Name: <span>{{ .Name }}</span>
+        </div>
+        <div>
+            Email: <span>{{ .Email }}</span>
+        </div>
+    </div>
+{{ end }}
+
+
+{{ block "oob-contact" . }}
+    <div id="contacts" hx-swap-oob="afterbegin">
+        {{ template "contact" . }}
+    </div>
+{{ end }}
